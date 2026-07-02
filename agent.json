@@ -1,0 +1,11 @@
+{
+  "name": "My SitRep Agent",
+  "tagline": "One line describing what your agent does.",
+  "description": "A longer description shown on the marketplace detail page. Explain what your agent produces and when a SitRep user should reach for it.",
+  "icon": "🤖",
+  "color": "blue",
+  "category": "productivity",
+  "taskTypes": ["doc", "summary"],
+  "requiredIntegrations": [],
+  "pricing": { "model": "free", "label": "Free" }
+}
