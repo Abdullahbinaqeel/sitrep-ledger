@@ -60,6 +60,20 @@ re-run the smoke test.
 
 ---
 
+## Examples
+
+Not sure where to start? Copy any handler in [`examples/`](examples/) over
+`handler.py` to begin from a working pattern — a multi-step slide outline,
+attendee-personalized emails, external-API research briefs, or `link` artifacts.
+Each one teaches a different SDK technique; see [`examples/README.md`](examples/README.md)
+for the full list.
+
+```bash
+cp examples/research_brief_handler.py handler.py   # then re-run the smoke test
+```
+
+---
+
 ## The contract
 
 SitRep POSTs to `<your-url>/run` (and `/test` for the Studio button):
@@ -108,7 +122,7 @@ handler.py              👈 YOUR LOGIC (or just edit prompt.txt)
 prompt.txt              👈 NO-CODE prompt
 agent.json              marketplace metadata
 sitrep_agent/sdk.py     signature verify + LLM client (don't edit)
-examples/               copy-over reference handlers
+examples/               copy-over reference handlers (see examples/README.md)
 scripts/                run-local · tunnel · smoke-test
 Dockerfile · Procfile · render.yaml   deploy configs
 ```
