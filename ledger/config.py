@@ -12,9 +12,18 @@ import os
 import re
 from typing import Any
 
-# Public base URL of THIS agent, used to build the dashboard link artifact.
-# On Render this is your service URL; locally it's the tunnel or localhost.
-PUBLIC_URL = os.getenv("PUBLIC_URL", "http://localhost:9000").rstrip("/")
+# Public base URL of THIS agent, used to build the dashboard + PDF link artifacts.
+# Prefer an explicitly-set PUBLIC_URL, but only if it's a well-formed http(s) URL
+# (guards against a mangled paste). Otherwise fall back to Render's own
+# RENDER_EXTERNAL_URL, then localhost. This self-heals bad manual entries.
+def _resolve_public_url() -> str:
+    for candidate in (os.getenv("PUBLIC_URL"), os.getenv("RENDER_EXTERNAL_URL")):
+        if candidate and candidate.strip().startswith(("http://", "https://")):
+            return candidate.strip().rstrip("/")
+    return "http://localhost:9000"
+
+
+PUBLIC_URL = _resolve_public_url()
 
 # Persistence. SQLite by default (zero setup); point DATABASE_URL at a hosted
 # Postgres (e.g. Neon/Supabase free tier) so the ledger survives restarts.
