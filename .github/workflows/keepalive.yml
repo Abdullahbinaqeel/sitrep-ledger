@@ -1,0 +1,30 @@
+name: keep-alive
+
+# Pings the deployed agent so Render's free instance doesn't spin down (which
+# would add a ~50s cold-start delay to the first real request). Runs on a
+# schedule and can also be triggered manually.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (GitHub may batch/delay slightly)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          URL="https://sitrep-ledger.onrender.com/health"
+          for i in 1 2 3 4; do
+            code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" "$URL" || echo 000)
+            echo "attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "service is warm"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "warning: /health did not return 200 (service may be waking or down)"
+          # Keep-alive should not spam failure emails; exit success regardless.
+          exit 0
