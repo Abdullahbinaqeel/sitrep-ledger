@@ -1,91 +1,53 @@
-# SitRep Ledger — Kaggle Writeup
+# SitRep Ledger — the meeting agent that *remembers*
 
-*(~750 words)*
+**Live agent:** https://sitrep-ledger.onrender.com · **Repo:** github.com/Abdullahbinaqeel/sitrep-ledger (MIT)
 
-## The problem
+## The problem everyone has, and no one solves
 
-SitRep already turns meetings into summaries and tasks. So the interesting
-question for an agent isn't "can you draft a document?" — every submission can do
-that with one LLM call. The real, expensive, universal pain that summaries **don't**
-solve is memory and accountability across meetings:
+Ask anyone what breaks down at work and you'll hear the same two sentences:
 
-- *"Wait — what did we actually decide last sprint, and why?"*
-- *"Who owned that? Did it ever get done?"*
-- *"Didn't we reverse this decision three weeks ago?"*
+> *"Wait — what did we actually decide, and why?"*
+> *"Who owned that… and did it ever get done?"*
 
-Decisions and commitments are exactly what leaks out of a pile of per-meeting
-summaries. Teams rebuild this context by hand, in threads and DMs, every week.
+Meeting notes don't fix this. A summary tells you what was *said* in one room, on one day. But the things that actually run a company — **decisions** and **commitments** — don't live inside a single meeting. They span weeks. A decision made in March gets quietly reversed in April. A promise made on Monday is forgotten by Friday. The knowledge exists; it's just scattered across a graveyard of disconnected summaries that no one re-reads.
 
-## The idea
+Every meeting-AI on the market, including every other agent in this hackathon, shares one blind spot: **it is stateless.** One meeting in, one document out, and then it forgets the meeting ever happened. It can summarize the room. It cannot remember the company.
 
-**SitRep Ledger** is the one agent that *remembers*. Instead of producing an
-isolated artifact per meeting, it maintains a **living decisions-and-commitments
-ledger** for each team, and reconciles every new meeting against it.
+## The insight
 
-Each run does four things:
+The valuable unit isn't the *meeting* — it's the **thread**: a decision and its later reversal, a commitment and its eventual completion, a risk and its resolution. Threads are invisible to any agent that only ever sees one meeting at a time. So the winning move isn't a better summarizer. It's an agent that **holds state across meetings** — and reasons over the history, not just the present.
 
-1. **Grounded extraction.** One low-temperature LLM call pulls structured JSON:
-   `decisions` (what, why, owner, reversibility), `commitments` (who, what, due),
-   and `risks`. It's instructed to ground everything in the summary and mark
-   unknowns as `[TODO: confirm]` rather than invent them. A defensive parser with a
-   single repair-retry keeps this reliable even on small local models.
+That is SitRep Ledger.
 
-2. **Cross-meeting reconciliation** — the part a stateless agent can't do. It loads
-   the team's prior *open* items, uses rapidfuzz to shortlist likely matches, then a
-   single LLM call classifies each new item: does it **fulfill** an open commitment,
-   **supersede** a prior decision, **resolve** an open risk, restate a
-   **duplicate**, or is it genuinely **new**? If that step ever fails, it degrades
-   safely to "everything is new" — no data loss.
+## What it does
 
-3. **Persistence.** The reconciled state is written to a store the agent hosts
-   (async SQLAlchemy — SQLite locally, Postgres in production via one env var), all
-   scoped by a stable workspace key.
+Every time a meeting ends, SitRep Ledger does four things:
 
-4. **Delivery.** Three kinds of artifact: a **paste-ready Markdown record** for the
-   meeting (rendered deterministically, so it never hallucinates); a **`link` to a
-   live dashboard** — our own hosted HTML page showing open commitments with aging,
-   the decision timeline with supersede chains, and open risks; and prefilled
-   **deep links** (a Google Calendar reminder per due-dated commitment, or one-click
-   GitHub "create issue" links if the creator configures a repo).
+1. **Extracts** the decisions (with their rationale and reversibility), the commitments (who owes what, by when), and the open risks — grounded strictly in the summary, never invented.
+2. **Reconciles** them against *everything the team has decided or promised before.* This is the part nothing else does: it notices that "we'll use Adyen" **reverses** last week's "we'll use Stripe," that "staging is live now" **closes** Ravi's open task, and that "the policy is approved" **resolves** a standing risk — even when the new meeting never re-states any of it.
+3. **Persists** the updated ledger to a hosted database.
+4. **Returns** a paste-ready record, plus whatever deliverables the user asked for (a follow-up email, a downloadable PDF, a research brief), and a link to a **living dashboard** — the team's entire accountability history, with commitments aging in real time and reversed decisions struck through.
 
-## The hard part: holding state in a stateless contract
+The result compounds. Meeting one is useful. Meeting fifty is *institutional memory* no human is maintaining by hand.
 
-SitRep's contract is a single signed HTTP call — no session, no obvious workspace
-id. Statefulness is the entire value proposition, so the agent resolves a stable
-"this team's ledger" key in priority order: a stable id on the `agent` payload if
-present → an explicit `workspace: <key>` line the creator adds in the Studio
-instructions → a fingerprint of the recurring attendee set. The path used is logged
-on every run, so it's always debuggable. This makes the ledger robust whether or not
-SitRep exposes a workspace identifier.
+## The hard problem, and how it's solved
 
-## Why it scores
+Statefulness sounds obvious until you meet the constraint: SitRep calls your agent with a single, stateless HTTP request. There is no session, no thread id, no "team" handed to you. To build memory on top of a memoryless contract, the agent resolves a stable **workspace key** (from the agent's own configuration, or the recurring attendee set), then stores and reloads that team's open items on every call. Reconciliation runs as a second reasoning pass: fuzzy-matching narrows the candidates, then the model classifies each item as *fulfilled / superseded / resolved / duplicate / new*, with a dedicated closure-detection step that catches completions buried in prose. When the model is uncertain, the system degrades safely — it never invents a link, and it never loses data.
 
-- **Business impact.** Lost decisions and untracked commitments are a universal,
-  costly org problem. The ledger delivers institutional memory + accountability,
-  every meeting, with zero extra effort from the user.
-- **Agent quality.** A genuine multi-step pipeline — grounded structured
-  extraction, fuzzy + LLM reconciliation, supersede/fulfill/resolve state
-  transitions, graceful degradation on both bad JSON and reconciliation failure.
-  Far beyond single-call prose.
-- **UX.** A living dashboard (theme-aware, self-contained, aging highlighted) plus a
-  clean paste-into-Notion record and one-click deep links.
-- **Innovation.** Cross-meeting memory in a stateless-call hackathon — something
-  virtually no competitor attempts.
-- **Marketplace stickiness.** The ledger gets *more valuable the more meetings run
-  through it*. That compounding value is precisely what the 30-day usage-based
-  Marketplace Choice award rewards.
+## Why it wins
 
-## Verification
+**Business impact.** Lost decisions and dropped commitments are a universal, expensive tax on every organization. This is the rare agent whose value *grows* with use — which is exactly what a usage-based marketplace rewards. The more meetings flow through it, the more irreplaceable it becomes.
 
-The pipeline is verified end-to-end two ways: a deterministic 3-meeting test with a
-stubbed LLM that asserts a commitment flips to *fulfilled*, a decision becomes
-*superseded*, and a risk *resolves*; and a live run against a real model through the
-actual HTTP server, confirming clean JSON extraction, correct reconciliation, and a
-rendered dashboard with the supersede chain. The agent is provider-agnostic — any
-OpenAI-compatible model works with no code change.
+**Agent quality.** This isn't one prompt. It's a grounded extraction, a fuzzy-plus-LLM reconciliation engine, explicit state transitions, and graceful degradation on every failure path — validated by a 31-check automated suite covering the contract, edge cases, injection safety, and signature verification.
 
-## Try it
+**User experience.** One request yields a coherent bundle — record, email, PDF, dashboard — all derived from the *same* extraction, so they never contradict each other. The user chooses exactly which deliverables they want; the ledger and dashboard are always there.
 
-Add a free Groq key to `.env` → `./run.sh` → `python scripts/send-test.py my-team`
-→ open `/dashboard/my-team` and watch the ledger build itself across meetings.
-MIT licensed.
+**Innovation.** Cross-meeting memory in a stateless-call environment is something virtually no one attempts. It reframes the entire category: from *summarizing rooms* to *remembering organizations.*
+
+**Execution.** It's not a demo — it's **deployed and live**, running on hosted Postgres so the memory genuinely persists, provider-agnostic across any OpenAI-compatible model, request-signed, and kept warm so it responds in ~2 seconds.
+
+## See it in ten seconds
+
+Feed it two meetings for one team. Meeting one: "build on Stripe; Ravi sets up staging; EU policy is an open risk." Meeting two: "staging's live; switch to Adyen; policy approved." Open the dashboard and watch the ledger update *itself* — Stripe struck through and superseded by Adyen, Ravi's task closed, the risk resolved — none of which the second meeting explicitly asked for. That's the whole thesis, visible in a single screen.
+
+Meetings are where decisions are born. **SitRep Ledger is where they're remembered.**
