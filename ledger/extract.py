@@ -2,8 +2,8 @@
 
 One low-temperature LLM call produces strict JSON; we parse defensively and, if
 the model wrapped it in prose or emitted slightly malformed JSON, do a single
-repair retry. This keeps extraction reliable on smaller local models (Ollama)
-while getting even cleaner output on stronger ones (Claude).
+repair retry. This keeps extraction reliable across models, from smaller local
+ones to larger hosted ones.
 """
 from __future__ import annotations
 

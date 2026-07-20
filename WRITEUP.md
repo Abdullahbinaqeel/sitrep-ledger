@@ -79,13 +79,13 @@ SitRep exposes a workspace identifier.
 
 The pipeline is verified end-to-end two ways: a deterministic 3-meeting test with a
 stubbed LLM that asserts a commitment flips to *fulfilled*, a decision becomes
-*superseded*, and a risk *resolves*; and a live run against a real local model
-(`llama3.1:8b`) through the actual HTTP server, confirming clean JSON extraction,
-correct reconciliation, and a rendered dashboard with the supersede chain. Running
-on Claude sharpens extraction further with no code change.
+*superseded*, and a risk *resolves*; and a live run against a real model through the
+actual HTTP server, confirming clean JSON extraction, correct reconciliation, and a
+rendered dashboard with the supersede chain. The agent is provider-agnostic — any
+OpenAI-compatible model works with no code change.
 
 ## Try it
 
-`ollama pull qwen2.5:7b` → `bash scripts/run-local.sh` → `bash scripts/smoke-test.sh`
-→ open `/dashboard/demo-team` and watch the ledger build itself across three
-meetings. Flip three env vars to run it on Claude. MIT licensed.
+Add a free Groq key to `.env` → `./run.sh` → `python scripts/send-test.py my-team`
+→ open `/dashboard/my-team` and watch the ledger build itself across meetings.
+MIT licensed.

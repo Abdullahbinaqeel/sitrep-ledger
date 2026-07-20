@@ -50,18 +50,19 @@ for a live endpoint.
 
 ---
 
-## For the judged submission: run on Claude
+## LLM: use a fast hosted model
 
-Local Ollama is free and proves the pipeline; **Claude gives the cleanest
-extraction and reconciliation.** It's a one-env flip (OpenAI-compatible endpoint):
+The agent needs a fast, capable model. **[Groq](https://console.groq.com) is free
+and near-instant** — the recommended default:
 
 ```bash
-LLM_BASE_URL=https://api.anthropic.com/v1
-LLM_API_KEY=sk-ant-...
-MODEL=claude-haiku-4-5-20251001
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=gsk_...
+MODEL=llama-3.3-70b-versatile
 ```
 
-Any OpenAI-compatible provider works (OpenAI, OpenRouter, vLLM, LM Studio).
+Any OpenAI-compatible provider works (OpenAI, OpenRouter, vLLM, LM Studio, or local
+Ollama on a GPU machine).
 
 ---
 
