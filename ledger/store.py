@@ -6,6 +6,7 @@ by workspace_key. Timestamps are stored as ISO-8601 UTC strings for portability.
 """
 from __future__ import annotations
 
+import urllib.parse
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -15,6 +16,31 @@ from sqlalchemy import (Column, DateTime, Integer, MetaData, String, Table, Text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from ledger.config import DATABASE_URL
+
+
+def _prepare_db_url(url: str) -> tuple[str, dict]:
+    """Normalize a DATABASE_URL for SQLAlchemy's async drivers.
+
+    Hosted Postgres (Neon/Supabase/Render) hands you a `postgres://…?sslmode=require`
+    URL, but the async driver (asyncpg) wants `postgresql+asyncpg://` and rejects the
+    libpq-style `sslmode`/`channel_binding` query params. We fix the scheme, strip
+    those params, and turn on SSL via connect_args instead. SQLite is passed through.
+    """
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+
+    connect_args: dict = {}
+    if url.startswith("postgresql+asyncpg://"):
+        parts = urllib.parse.urlsplit(url)
+        query = urllib.parse.parse_qsl(parts.query)
+        want_ssl = any(k == "sslmode" and v != "disable" for k, v in query)
+        kept = [(k, v) for k, v in query if k not in ("sslmode", "channel_binding")]
+        url = urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(kept)))
+        if want_ssl or "neon.tech" in url or "supabase" in url or "render.com" in url:
+            connect_args["ssl"] = True
+    return url, connect_args
 
 _metadata = MetaData()
 
@@ -86,7 +112,8 @@ _initialized = False
 def _get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
-        _engine = create_async_engine(DATABASE_URL, future=True)
+        url, connect_args = _prepare_db_url(DATABASE_URL)
+        _engine = create_async_engine(url, future=True, connect_args=connect_args)
     return _engine
 
 
