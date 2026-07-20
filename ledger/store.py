@@ -39,8 +39,23 @@ def _prepare_db_url(url: str) -> tuple[str, dict]:
         kept = [(k, v) for k, v in query if k not in ("sslmode", "channel_binding")]
         url = urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(kept)))
         if want_ssl or "neon.tech" in url or "supabase" in url or "render.com" in url:
-            connect_args["ssl"] = True
+            connect_args["ssl"] = _ssl_context()
     return url, connect_args
+
+
+def _ssl_context():
+    """An SSL context that verifies against a real CA bundle on any machine.
+
+    asyncpg's default (ssl=True) relies on system root certs, which some Python
+    installs (notably python.org builds on macOS) lack. Using certifi's bundle
+    makes hosted-Postgres TLS work identically locally and in production.
+    """
+    import ssl
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
 
 _metadata = MetaData()
 
