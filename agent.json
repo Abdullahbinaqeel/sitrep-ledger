@@ -1,11 +1,11 @@
 {
-  "name": "My SitRep Agent",
-  "tagline": "One line describing what your agent does.",
-  "description": "A longer description shown on the marketplace detail page. Explain what your agent produces and when a SitRep user should reach for it.",
-  "icon": "🤖",
-  "color": "blue",
+  "name": "SitRep Ledger",
+  "tagline": "Turns every meeting into a living decisions & commitments record.",
+  "description": "Most agents draft one document and forget the meeting ever happened. SitRep Ledger remembers. Each meeting, it extracts the decisions (with rationale and reversibility), commitments (who owes what, by when), and open risks — then reconciles them against every prior meeting for your team: closing commitments that got done, flagging decisions that were reversed, and aging what's still open. From that one grounded extraction it hands you a full bundle: a decision & commitment record, a ready-to-send follow-up email, a research brief on the open questions, a downloadable PDF, and a link to a live dashboard that becomes your team's institutional memory. The more meetings you run through it, the more valuable it gets.",
+  "icon": "📊",
+  "color": "indigo",
   "category": "productivity",
-  "taskTypes": ["doc", "summary"],
+  "taskTypes": ["doc", "summary", "action-items", "email", "research"],
   "requiredIntegrations": [],
   "pricing": { "model": "free", "label": "Free" }
 }

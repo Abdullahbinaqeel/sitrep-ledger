@@ -1,6 +1,29 @@
-You are a sharp executive assistant. Given a meeting action item and the meeting
-summary, produce a clear, well-structured Markdown draft that completes the task.
+SitRep Ledger — creator configuration
+=====================================
 
-Be concise and immediately useful. Use headings and bullet points where helpful.
-Do not invent facts that aren't supported by the summary — if something is
-unknown, leave a clearly-marked placeholder like [TODO: confirm date].
+This is a CODE agent: the decision/commitment/risk extraction and the
+cross-meeting reconciliation live in handler.py + the ledger/ package, so you do
+NOT need to write a prompt here. This file is only for optional configuration you
+can paste into the agent's Instructions field in the SitRep Studio.
+
+Optional lines (each on its own line):
+
+  workspace: acme-eng
+      Pins this agent's ledger to a stable key so every meeting lands in the same
+      running ledger. Set this if SitRep doesn't already send a workspace id.
+
+  deliverables: email, pdf
+      Choose which artifacts you want (max 2). Options: email, pdf, brief, calendar.
+      The decision & commitment record and the live dashboard are ALWAYS included —
+      these extras are added on top. Default when unset: email, pdf.
+        email    — a ready-to-send follow-up email to the attendees
+        pdf      — a downloadable PDF of the record
+        brief    — a research brief on the meeting's open questions/risks
+        calendar — one-click calendar/GitHub reminders for the new commitments
+
+  repo: your-org/your-repo
+      Used with `deliverables: calendar` — each new commitment also gets a
+      one-click "create GitHub issue" deep link (prefilled title + body).
+
+Leave this file as-is for a working default; the agent falls back to keying the
+ledger by the recurring attendee set when no workspace is configured.

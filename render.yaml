@@ -1,9 +1,14 @@
 # One-click deploy to Render's free tier. Push this repo to GitHub, then
-# "New > Blueprint" on render.com and point it here. Set SITREP_AGENT_SECRET
-# (and any BYOK vars) in the Render dashboard.
+# "New > Blueprint" on render.com and point it here. Set the `sync: false`
+# secrets (SITREP_AGENT_SECRET, LLM_API_KEY, DATABASE_URL) in the dashboard.
+#
+# IMPORTANT for SitRep Ledger: set DATABASE_URL to a free hosted Postgres
+# (Neon/Supabase) — the ledger's value compounds across meetings, and Render's
+# free filesystem is wiped on restart, so SQLite would lose history.
+# Also set PUBLIC_URL to this service's URL so dashboard links resolve.
 services:
   - type: web
-    name: sitrep-agent
+    name: sitrep-ledger
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -11,9 +16,13 @@ services:
     envVars:
       - key: SITREP_AGENT_SECRET
         sync: false
+      - key: PUBLIC_URL
+        sync: false          # set to your https://<service>.onrender.com URL
+      - key: DATABASE_URL
+        sync: false          # postgresql+asyncpg://... (Neon/Supabase free tier)
       - key: LLM_BASE_URL
-        value: https://openrouter.ai/api/v1
+        value: https://api.groq.com/openai/v1
       - key: LLM_API_KEY
-        sync: false
+        sync: false          # your Groq key (gsk_...)
       - key: MODEL
-        value: meta-llama/llama-3.1-8b-instruct:free
+        value: llama-3.3-70b-versatile
